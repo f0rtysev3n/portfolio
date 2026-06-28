@@ -134,11 +134,35 @@
 				return;
 			}
 
-			// No backend on GitHub Pages: confirm success and reset.
-			// To make this live, connect a service like Formspree or
-			// set the form action to your endpoint.
-			setStatus("Thanks, " + name.value.trim().split(" ")[0] + "! Your message has been captured. I'll get back to you soon.", true);
-			form.reset();
+			// Send to the form's endpoint (FormSubmit) via AJAX so the
+			// visitor stays on the page and sees an inline status message.
+			var endpoint = form.getAttribute("action");
+			var submitBtn = form.querySelector("button[type='submit']");
+			var firstName = name.value.trim().split(" ")[0];
+			if (!endpoint) {
+				setStatus("Thanks, " + firstName + "! (Form endpoint not configured yet.)", true);
+				form.reset();
+				return;
+			}
+			if (submitBtn) { submitBtn.disabled = true; }
+			setStatus("Sending your message\u2026", true);
+			fetch(endpoint, {
+				method: "POST",
+				headers: { "Accept": "application/json" },
+				body: new FormData(form)
+			})
+				.then(function (res) {
+					if (res.ok) {
+						setStatus("Thanks, " + firstName + "! Your message has been sent \u2014 I'll get back to you soon.", true);
+						form.reset();
+					} else {
+						setStatus("Sorry, something went wrong. Please email me directly at K4shafali@gmail.com.", false);
+					}
+				})
+				.catch(function () {
+					setStatus("Network error. Please email me directly at K4shafali@gmail.com.", false);
+				})
+				.finally(function () { if (submitBtn) { submitBtn.disabled = false; } });
 		});
 	}
 

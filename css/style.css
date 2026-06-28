@@ -1036,6 +1036,7 @@ ul {
 	color: #001019;
 	box-shadow: var(--glow-accent);
 }
+.profile-card__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .profile-card__name { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .profile-card__role { color: var(--color-accent); font-size: 0.9rem; margin-bottom: 1.3rem; }
 .profile-meta { display: grid; gap: 0.8rem; text-align: left; margin-bottom: 1.4rem; }

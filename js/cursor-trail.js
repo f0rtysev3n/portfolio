@@ -42,8 +42,8 @@
 	window.addEventListener("resize", resize);
 
 	var points = [];           // { x, y, t }
-	var MAX_POINTS = 24;       // trail resolution
-	var LIFE = 520;            // ms before a point fades out
+	var MAX_POINTS = 60;       // trail resolution
+	var LIFE = 900;            // ms before a point fades out
 	var hue = 0;               // global hue, advances every frame
 	var lastX = null, lastY = null;
 
@@ -53,7 +53,7 @@
 		if (lastX !== null) {
 			var dx = x - lastX, dy = y - lastY;
 			var dist = Math.sqrt(dx * dx + dy * dy);
-			var steps = Math.min(6, Math.floor(dist / 16));
+			var steps = Math.min(12, Math.floor(dist / 10));
 			for (var i = 1; i <= steps; i++) {
 				points.push({
 					x: lastX + (dx * i) / (steps + 1),
@@ -83,9 +83,9 @@
 
 	// Soft-wide glow first, then progressively tighter, brighter cores.
 	var PASSES = [
-		{ width: 20, blur: 30, alpha: 0.30 },
-		{ width: 9,  blur: 18, alpha: 0.55 },
-		{ width: 3.5, blur: 10, alpha: 0.95 }
+		{ width: 40, blur: 44, alpha: 0.24 },
+		{ width: 19, blur: 26, alpha: 0.48 },
+		{ width: 7.5, blur: 14, alpha: 0.95 }
 	];
 
 	function render() {
@@ -107,7 +107,7 @@
 					var t = i / (points.length - 1);          // 0 = tail, 1 = head
 					var fade = (now - b.t) / LIFE;
 					fade = 1 - (fade < 0 ? 0 : fade > 1 ? 1 : fade);
-					var segHue = (hue + (1 - t) * 200) % 360;  // full-spectrum spread
+					var segHue = (hue + (1 - t) * 260) % 360;  // full-spectrum spread
 					var color = "hsla(" + segHue + ", 100%, 60%, ";
 
 					ctx.strokeStyle = color + (pass.alpha * fade) + ")";
@@ -127,8 +127,8 @@
 			ctx.beginPath();
 			ctx.fillStyle = "hsla(" + hue + ", 100%, 72%, 0.95)";
 			ctx.shadowColor = "hsla(" + hue + ", 100%, 60%, 1)";
-			ctx.shadowBlur = 26;
-			ctx.arc(head.x, head.y, 3.5, 0, Math.PI * 2);
+			ctx.shadowBlur = 38;
+			ctx.arc(head.x, head.y, 7, 0, Math.PI * 2);
 			ctx.fill();
 
 			ctx.globalCompositeOperation = "source-over";
