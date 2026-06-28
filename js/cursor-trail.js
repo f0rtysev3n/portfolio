@@ -1,137 +1,142 @@
-/* ============================================================
-   cursor-trail.js
-   Custom neon rainbow cursor-trail effect — built from scratch
-   with the vanilla Canvas 2D API. No libraries, no CDN.
-
-   How it works:
-   - Records recent pointer positions (with timestamps).
-   - Each frame, draws the trail as additive ("lighter") glowing
-     segments whose hue cycles through the full color wheel, so
-     the tail shimmers through every neon color.
-   - Segments taper and fade toward the tail, and the whole trail
-     dissolves when the pointer stops moving.
-   - DPR-aware, resizes with the window, and is skipped for
-     touch-only devices and visitors who prefer reduced motion.
-   ============================================================ */
+/* =====================================================================
+   Tubes Cursor — original Canvas implementation (soft / comfortable)
+   ---------------------------------------------------------------------
+   A single smooth, glossy tube flows behind the pointer. It uses
+   cylinder-style shading (darker edges + lighter centre) for a 3D look,
+   a gentle soft glow, muted saturation, and a slow color flow so it is
+   never harsh or uncomfortable to look at. Click softly shifts the hue.
+   Pure 2D canvas: no external libraries, lightweight, GitHub-Pages safe.
+   ===================================================================== */
 (function () {
 	"use strict";
 
 	var canvas = document.getElementById("cursor-trail");
 	if (!canvas) return;
 
-	var mq = window.matchMedia;
-	var reduceMotion = mq && mq("(prefers-reduced-motion: reduce)").matches;
-	var finePointer = mq && mq("(hover: hover) and (pointer: fine)").matches;
-	// A cursor tail only makes sense with a real pointer that can hover.
-	if (reduceMotion || !finePointer) return;
+	// Respect accessibility + only run for real mouse pointers (not touch).
+	if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+	if (window.matchMedia && !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
 	var ctx = canvas.getContext("2d");
-	var w = 0, h = 0, dpr = 1;
+	if (!ctx) return;
+
+	var dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+	var W = 0, H = 0;
 
 	function resize() {
-		dpr = Math.min(window.devicePixelRatio || 1, 2);
-		w = window.innerWidth;
-		h = window.innerHeight;
-		canvas.width = Math.floor(w * dpr);
-		canvas.height = Math.floor(h * dpr);
-		canvas.style.width = w + "px";
-		canvas.style.height = h + "px";
+		W = window.innerWidth;
+		H = window.innerHeight;
+		canvas.width = Math.round(W * dpr);
+		canvas.height = Math.round(H * dpr);
+		canvas.style.width = W + "px";
+		canvas.style.height = H + "px";
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	}
 	resize();
 	window.addEventListener("resize", resize);
 
-	var points = [];           // { x, y, t }
-	var MAX_POINTS = 60;       // trail resolution
-	var LIFE = 900;            // ms before a point fades out
-	var hue = 0;               // global hue, advances every frame
+	/* ---------- Trail buffer ---------- */
+	var points = [];            // { x, y, t }
+	var MAX_POINTS = 64;        // tail length (resolution)
+	var LIFE = 850;             // ms before a point fully fades
 	var lastX = null, lastY = null;
 
 	function addPoint(x, y) {
 		var now = performance.now();
-		// Interpolate extra points on fast moves so the line stays smooth.
+		// Interpolate on fast moves so the tube stays smooth and continuous.
 		if (lastX !== null) {
 			var dx = x - lastX, dy = y - lastY;
 			var dist = Math.sqrt(dx * dx + dy * dy);
-			var steps = Math.min(12, Math.floor(dist / 10));
-			for (var i = 1; i <= steps; i++) {
-				points.push({
-					x: lastX + (dx * i) / (steps + 1),
-					y: lastY + (dy * i) / (steps + 1),
-					t: now
-				});
+			var steps = Math.min(14, Math.floor(dist / 8));
+			for (var s = 1; s <= steps; s++) {
+				points.push({ x: lastX + (dx * s) / steps, y: lastY + (dy * s) / steps, t: now });
 			}
 		}
 		points.push({ x: x, y: y, t: now });
 		lastX = x;
 		lastY = y;
-		if (points.length > MAX_POINTS) {
-			points.splice(0, points.length - MAX_POINTS);
-		}
+		if (points.length > MAX_POINTS) points.splice(0, points.length - MAX_POINTS);
 	}
 
-	window.addEventListener(
-		"pointermove",
-		function (e) { addPoint(e.clientX, e.clientY); },
-		{ passive: true }
-	);
+	window.addEventListener("pointermove", function (e) {
+		addPoint(e.clientX, e.clientY);
+	}, { passive: true });
 
-	// Forget the trail when the cursor leaves / the tab loses focus.
-	function clearTrail() { points.length = 0; lastX = lastY = null; }
-	window.addEventListener("blur", clearTrail);
-	document.addEventListener("mouseleave", clearTrail);
+	/* ---------- Color state ---------- */
+	// A single base hue drifts slowly so the tube gently flows through the
+	// spectrum. Saturation is kept muted for comfort. Click nudges the hue.
+	var baseHue = 205;          // calm cyan/blue start
+	var SAT = 70;               // muted saturation (not neon)
+	var HUE_SPREAD = 60;        // subtle multi-color gradient along the tube
 
-	// Soft-wide glow first, then progressively tighter, brighter cores.
+	window.addEventListener("pointerdown", function () {
+		baseHue = (baseHue + 70 + Math.random() * 80) % 360;
+	}, { passive: true });
+
+	/* ---------- Render ---------- */
+	var BASE_WIDTH = 22;        // head thickness
+	var TWO_PI = Math.PI * 2;
+
+	// Cylinder shading: dark rim -> mid body -> soft highlight centre.
+	// width multiplier, lightness %, alpha. Drawn with normal blending so
+	// overlaps never blow out to white.
 	var PASSES = [
-		{ width: 40, blur: 44, alpha: 0.24 },
-		{ width: 19, blur: 26, alpha: 0.48 },
-		{ width: 7.5, blur: 14, alpha: 0.95 }
+		{ w: 1.00, light: 34, alpha: 0.55 },  // outer rim (gives depth)
+		{ w: 0.66, light: 50, alpha: 0.60 },  // tube body
+		{ w: 0.30, light: 66, alpha: 0.50 }   // soft inner sheen
 	];
 
 	function render() {
+		ctx.clearRect(0, 0, W, H);
+
 		var now = performance.now();
 		while (points.length && now - points[0].t > LIFE) points.shift();
 
-		ctx.clearRect(0, 0, w, h);
-
 		if (points.length > 1) {
-			hue = (hue + 6) % 360;
-			ctx.globalCompositeOperation = "lighter";
-			ctx.lineJoin = "round";
+			baseHue = (baseHue + 0.22) % 360; // slow, gentle color flow
+
+			ctx.globalCompositeOperation = "source-over"; // no additive glare
 			ctx.lineCap = "round";
+			ctx.lineJoin = "round";
+
+			var len = points.length;
 
 			for (var p = 0; p < PASSES.length; p++) {
 				var pass = PASSES[p];
-				for (var i = 1; i < points.length; i++) {
-					var a = points[i - 1], b = points[i];
-					var t = i / (points.length - 1);          // 0 = tail, 1 = head
-					var fade = (now - b.t) / LIFE;
-					fade = 1 - (fade < 0 ? 0 : fade > 1 ? 1 : fade);
-					var segHue = (hue + (1 - t) * 260) % 360;  // full-spectrum spread
-					var color = "hsla(" + segHue + ", 100%, 60%, ";
 
-					ctx.strokeStyle = color + (pass.alpha * fade) + ")";
-					ctx.shadowColor = color + fade + ")";
-					ctx.shadowBlur = pass.blur;
-					ctx.lineWidth = pass.width * t * fade + 0.4;
+				// One soft shadow on the body pass only = gentle glow, low cost.
+				if (p === 1) {
+					ctx.shadowColor = "hsla(" + Math.round(baseHue) + ", " + SAT + "%, 50%, 0.45)";
+					ctx.shadowBlur = 14;
+				} else {
+					ctx.shadowBlur = 0;
+				}
+
+				for (var i = 1; i < len; i++) {
+					var a0 = points[i - 1];
+					var a1 = points[i];
+
+					var along = i / (len - 1);        // 0 = tail, 1 = head
+					var age = (now - a1.t) / LIFE;
+					if (age > 1) age = 1;
+					var fade = 1 - age;
+					if (fade <= 0) continue;
+
+					var width = BASE_WIDTH * (0.28 + 0.72 * along) * pass.w * fade;
+					if (width < 0.4) continue;
+
+					// Subtle hue gradient along the length (calmer than full rainbow).
+					var segHue = (baseHue + (1 - along) * HUE_SPREAD) % 360;
 
 					ctx.beginPath();
-					ctx.moveTo(a.x, a.y);
-					ctx.lineTo(b.x, b.y);
+					ctx.moveTo(a0.x, a0.y);
+					ctx.lineTo(a1.x, a1.y);
+					ctx.lineWidth = width;
+					ctx.strokeStyle = "hsla(" + Math.round(segHue) + ", " + SAT + "%, " + pass.light + "%, " + (pass.alpha * fade) + ")";
 					ctx.stroke();
 				}
 			}
 
-			// Bright neon head.
-			var head = points[points.length - 1];
-			ctx.beginPath();
-			ctx.fillStyle = "hsla(" + hue + ", 100%, 72%, 0.95)";
-			ctx.shadowColor = "hsla(" + hue + ", 100%, 60%, 1)";
-			ctx.shadowBlur = 38;
-			ctx.arc(head.x, head.y, 7, 0, Math.PI * 2);
-			ctx.fill();
-
-			ctx.globalCompositeOperation = "source-over";
 			ctx.shadowBlur = 0;
 		}
 
