@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
 	<link rel="stylesheet" href="css/variables.css" />
 	<link rel="stylesheet" href="css/style.css" />
 	<link rel="stylesheet" href="css/animations.css" />
@@ -90,7 +90,7 @@
 						</div>
 					</div>
 
-					<form class="form-card glass" data-contact-form data-reveal="left" novalidate>
+					<form class="form-card glass" data-contact-form data-reveal="left" action="https://formsubmit.co/ajax/K4shafali@gmail.com" method="POST" novalidate>
 						<h2 class="section-title">Send a Message</h2>
 						<div class="field">
 							<label for="name">Name <span class="req">*</span></label>
@@ -108,9 +108,12 @@
 							<label for="message">Message <span class="req">*</span></label>
 							<textarea id="message" name="message" rows="5" placeholder="Write your message..." required></textarea>
 						</div>
+						<input type="hidden" name="_subject" value="New message from your portfolio site" />
+						<input type="hidden" name="_template" value="table" />
+						<input type="hidden" name="_captcha" value="false" />
 						<button type="submit" class="btn btn--primary btn--block btn--lg"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
 						<p class="form-status" data-form-status role="status" aria-live="polite"></p>
-						<p class="form-note">This form is front-end only. To receive messages, connect a service like Formspree or set the form action to your endpoint — see the README.</p>
+						<p class="form-note">Your message is delivered straight to my inbox. I usually reply within a day.</p>
 					</form>
 				</div>
 			</div>
