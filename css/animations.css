@@ -1,0 +1,104 @@
+/* ============================================================
+   animations.css
+   Keyframes + scroll-reveal (AOS-style) utility classes.
+   Reveal classes start hidden and transition in when the
+   element gains the .is-visible class (added by js/scroll.js).
+   Honors prefers-reduced-motion.
+   ============================================================ */
+
+/* ---------------- Keyframes ---------------- */
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0; }
+}
+
+@keyframes pulse {
+	0% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0.6); }
+	70% { box-shadow: 0 0 0 10px rgba(0, 200, 150, 0); }
+	100% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0); }
+}
+
+@keyframes float {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-12px); }
+}
+
+@keyframes ripple {
+	to { transform: scale(4); opacity: 0; }
+}
+
+@keyframes fadeInUp {
+	from { opacity: 0; transform: translateY(30px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+	0% { background-position: -480px 0; }
+	100% { background-position: 480px 0; }
+}
+
+@keyframes gridmove {
+	0% { background-position: 0 0; }
+	100% { background-position: 50px 50px; }
+}
+
+/* ---------------- Scroll reveal utilities ---------------- */
+[data-reveal] {
+	opacity: 0;
+	transform: translateY(34px);
+	transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+	will-change: opacity, transform;
+}
+[data-reveal="left"] { transform: translateX(-40px); }
+[data-reveal="right"] { transform: translateX(40px); }
+[data-reveal="zoom"] { transform: scale(0.92); }
+[data-reveal="fade"] { transform: none; }
+
+[data-reveal].is-visible {
+	opacity: 1;
+	transform: none;
+}
+
+/* Stagger delays (apply with data-delay attribute) */
+[data-delay="1"] { transition-delay: 0.08s; }
+[data-delay="2"] { transition-delay: 0.16s; }
+[data-delay="3"] { transition-delay: 0.24s; }
+[data-delay="4"] { transition-delay: 0.32s; }
+[data-delay="5"] { transition-delay: 0.40s; }
+[data-delay="6"] { transition-delay: 0.48s; }
+
+/* Continuous float helper */
+.is-floating { animation: float 6s ease-in-out infinite; }
+
+/* Animated grid background helper */
+.bg-grid::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image:
+		linear-gradient(rgba(0, 180, 255, 0.05) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(0, 180, 255, 0.05) 1px, transparent 1px);
+	background-size: 50px 50px;
+	mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+	-webkit-mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+	animation: gridmove 8s linear infinite;
+	z-index: -1;
+	pointer-events: none;
+}
+
+/* ---------------- Reduced motion ---------------- */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+	[data-reveal] { opacity: 1 !important; transform: none !important; }
+}
