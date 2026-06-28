@@ -1,0 +1,6 @@
+# robots.txt for Kashaf Ali Portfolio
+User-agent: *
+Allow: /
+
+# Sitemap (update the domain after deploying to GitHub Pages)
+Sitemap: https://f0rtysev3n.github.io/portfolio/sitemap.xml
