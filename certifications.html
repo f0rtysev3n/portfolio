@@ -68,22 +68,30 @@
 			<div class="container">
 				<div class="section-head" data-reveal><span class="eyebrow">Earned</span><h2 class="section-title">Achieved Certifications</h2></div>
 				<div class="grid grid--2">
-					<article class="cert-card glass" data-reveal data-delay="1">
-						<div class="cert-card__badge"><i class="fa-brands fa-aws"></i></div>
-						<h3 class="cert-card__title">AWS Certified Cloud Practitioner</h3>
-						<p class="cert-card__issuer">Amazon Web Services</p>
-						<span class="cert-card__date"><i class="fa-regular fa-calendar"></i> Issued 2023</span>
-						<div class="project-card__actions">
-							<a class="btn btn--secondary btn--sm" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> View Credential</a>
+					<article class="cert-card cert-card--image glass" data-reveal data-delay="1">
+						<a class="cert-card__media" href="assets/certificates/aws-cloud-practitioner.jpg" data-lightbox="AWS Certified Cloud Practitioner — Amazon Web Services (2023)" aria-label="View AWS Certified Cloud Practitioner certificate full size">
+							<img src="assets/certificates/aws-cloud-practitioner.jpg" alt="AWS Certified Cloud Practitioner certificate" loading="lazy" onerror="this.parentElement.classList.add('is-missing')" />
+							<span class="cert-card__zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+						</a>
+						<div class="cert-card__body">
+							<h3 class="cert-card__title">AWS Certified Cloud Practitioner</h3>
+							<p class="cert-card__issuer">Amazon Web Services · Issued 2023</p>
+							<div class="project-card__actions">
+								<a class="btn btn--secondary btn--sm" href="assets/certificates/aws-cloud-practitioner.jpg" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> View Certificate</a>
+							</div>
 						</div>
 					</article>
-					<article class="cert-card glass" data-reveal data-delay="2">
-						<div class="cert-card__badge"><i class="fa-solid fa-user-secret"></i></div>
-						<h3 class="cert-card__title">CEH Practical</h3>
-						<p class="cert-card__issuer">EC-Council</p>
-						<span class="cert-card__date"><i class="fa-regular fa-calendar"></i> Issued 2023</span>
-						<div class="project-card__actions">
-							<a class="btn btn--secondary btn--sm" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> View Credential</a>
+					<article class="cert-card cert-card--image glass" data-reveal data-delay="2">
+						<a class="cert-card__media" href="assets/certificates/ceh-practical.jpg" data-lightbox="CEH Practical — EC-Council (2023)" aria-label="View CEH Practical certificate full size">
+							<img src="assets/certificates/ceh-practical.jpg" alt="CEH Practical certificate" loading="lazy" onerror="this.parentElement.classList.add('is-missing')" />
+							<span class="cert-card__zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+						</a>
+						<div class="cert-card__body">
+							<h3 class="cert-card__title">CEH Practical</h3>
+							<p class="cert-card__issuer">EC-Council · Issued 2023</p>
+							<div class="project-card__actions">
+								<a class="btn btn--secondary btn--sm" href="assets/certificates/ceh-practical.jpg" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> View Certificate</a>
+							</div>
 						</div>
 					</article>
 				</div>
@@ -144,5 +152,32 @@
 	<script src="js/cursor-trail.js" defer></script>
 	<script src="js/scroll.js" defer></script>
 	<script src="js/script.js" defer></script>
+	<script>
+		(function () {
+			var triggers = document.querySelectorAll('[data-lightbox]');
+			if (!triggers.length) return;
+			var box = document.createElement('div');
+			box.className = 'lightbox';
+			box.setAttribute('role', 'dialog');
+			box.setAttribute('aria-modal', 'true');
+			box.innerHTML = '<button class="lightbox__close" type="button" aria-label="Close">&times;</button><img class="lightbox__img" alt="" /><p class="lightbox__caption"></p>';
+			document.body.appendChild(box);
+			var img = box.querySelector('.lightbox__img');
+			var cap = box.querySelector('.lightbox__caption');
+			function open(src, caption) {
+				img.src = src; img.alt = caption || 'Certificate'; cap.textContent = caption || '';
+				box.classList.add('is-open'); document.body.style.overflow = 'hidden';
+			}
+			function close() { box.classList.remove('is-open'); document.body.style.overflow = ''; img.src = ''; }
+			triggers.forEach(function (t) {
+				t.addEventListener('click', function (e) {
+					e.preventDefault();
+					open(t.getAttribute('href'), t.getAttribute('data-lightbox'));
+				});
+			});
+			box.addEventListener('click', function (e) { if (e.target === box || e.target.closest('.lightbox__close')) close(); });
+			document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+		})();
+	</script>
 </body>
 </html>

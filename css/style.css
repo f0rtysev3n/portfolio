@@ -985,6 +985,27 @@ ul {
 .cert-card--placeholder .cert-card__badge::before { background: var(--color-surface); }
 .cert-card--placeholder .cert-card__badge i { color: var(--color-faint); }
 
+/* Image-based certificate cards */
+.cert-card--image { padding: 0; text-align: left; display: flex; flex-direction: column; }
+.cert-card__media { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: rgba(255,255,255,0.03); }
+.cert-card__media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--t-base) var(--ease); }
+.cert-card--image:hover .cert-card__media img { transform: scale(1.05); }
+.cert-card__zoom { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,12,24,0.55); color: #fff; font-size: 1.6rem; opacity: 0; transition: opacity var(--t-base) var(--ease); pointer-events: none; }
+.cert-card__media:hover .cert-card__zoom, .cert-card__media:focus-visible .cert-card__zoom { opacity: 1; }
+.cert-card__media.is-missing img { display: none; }
+.cert-card__media.is-missing .cert-card__zoom { display: none; }
+.cert-card__media.is-missing::after { content: "Add certificate image"; position: absolute; inset: 0.6rem; display: grid; place-items: center; color: var(--color-faint); border: 1px dashed var(--glass-border); border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 600; text-align: center; padding: 1rem; }
+.cert-card__body { padding: 1.3rem 1.5rem 1.6rem; }
+.cert-card--image .cert-card__title { margin-bottom: 0.25rem; }
+
+/* Lightbox (certificate viewer) */
+.lightbox { position: fixed; inset: 0; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; background: rgba(2,8,16,0.92); backdrop-filter: blur(6px); opacity: 0; visibility: hidden; transition: opacity var(--t-base) var(--ease), visibility var(--t-base) var(--ease); }
+.lightbox.is-open { opacity: 1; visibility: visible; }
+.lightbox__img { max-width: min(1100px, 92vw); max-height: 80vh; object-fit: contain; border-radius: var(--radius-md); box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.lightbox__caption { color: var(--color-muted); font-size: 0.9rem; text-align: center; }
+.lightbox__close { position: absolute; top: 1.2rem; right: 1.4rem; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.08); color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: background var(--t-base) var(--ease); }
+.lightbox__close:hover { background: rgba(255,255,255,0.18); }
+
 /* ---------------- Feature / value cards ---------------- */
 .feature-card {
 	padding: 1.7rem;
