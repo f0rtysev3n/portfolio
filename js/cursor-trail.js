@@ -25,12 +25,10 @@
 (function () {
 	"use strict";
 
-	// Respect accessibility + only run for real mouse pointers (not touch).
-	if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-	if (window.matchMedia && !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-
 	/* ---------- Settings (tweak these) ---------- */
 	var CFG = {
+		respectReducedMotion: true, // false = run even if the OS has "reduce motion" turned on
+		mouseOnly: true,            // false = run even if the browser doesn't report a mouse/trackpad
 		legs: 8,                 // legs on the main spider (even number)
 		seg1: 46,                // upper leg length (px)
 		seg2: 58,                // lower leg length (px)
@@ -38,7 +36,9 @@
 		maxReach: 0.92,          // farthest a foot is placed
 		stepTimeSlow: 170,       // ms per leg step when moving slowly
 		stepTimeFast: 65,        // ms per leg step when scurrying
-		follow: 11,              // body follow speed (higher = snappier)
+		follow: 11,              // follow speed of friend/swarm spiders (higher = snappier)
+		mainFollow: 6,           // follow speed of the main spider (lower = lazier, trails more)
+		followDistance: 90,      // px the spider keeps away from the cursor (0 = sit on the cursor)
 		snapDist: 70,            // how far a foot will snap to an element edge
 		legLift: 14,             // how high a leg lifts while stepping (px)
 		selector: "a, button, h1, h2, h3, h4, h5, h6, p, li, img, input, textarea, select, label, code, pre, td, th, summary",
@@ -65,11 +65,25 @@
 
 	var KIND_HUE = { link: 0, heading: 150, text: 80, code: -75, image: 110, form: -150 };
 
+	function say(msg) {
+		if (window.console && console.info) console.info("[spider-cursor] " + msg);
+	}
+
+	// Respect accessibility + only run for real mouse pointers (not touch).
+	if (CFG.respectReducedMotion && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		say("not started: your system has 'reduce motion' turned on. Set respectReducedMotion: false in CFG to override.");
+		return;
+	}
+	if (CFG.mouseOnly && window.matchMedia && !window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+		say("not started: browser does not report a mouse/trackpad (hover + fine pointer). Set mouseOnly: false in CFG to override.");
+		return;
+	}
+
 	function boot() {
 		var canvas = document.getElementById("cursor-trail");
-		if (!canvas) return;
+		if (!canvas) { say("not started: no <canvas id=\"cursor-trail\"> found in the page."); return; }
 		var ctx = canvas.getContext("2d");
-		if (!ctx) return;
+		if (!ctx) { say("not started: canvas 2D context unavailable."); return; }
 
 		var TWO_PI = Math.PI * 2;
 		function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
@@ -406,7 +420,7 @@
 
 		Spider.prototype.update = function (dt, now) {
 			var tgt = this.follow(now);
-			this.lookAt = tgt;
+			this.lookAt = this.main ? mouse : tgt;
 
 			// Follow
 			var px = this.x, py = this.y;
@@ -426,6 +440,7 @@
 			var want = this.heading;
 			if (hg > 0.5) want = Math.PI / 2;
 			else if (this.speed > 40) want = Math.atan2(this.vy, this.vx);
+			else if (this.main) want = Math.atan2(mouse.y - this.y, mouse.x - this.x);   // waiting: face the cursor
 			var d = want - this.heading;
 			d = Math.atan2(Math.sin(d), Math.cos(d));
 			this.heading += d * (1 - Math.exp(-10 * dt));
@@ -628,7 +643,22 @@
 		/* =================================================================
 		   Spiders: the main one + optional friends / swarm
 		   ================================================================= */
-		var main = new Spider({ main: true, scale: 1, follow: function () { return mouse; } });
+		// The main spider chases a point that sits followDistance px from the cursor,
+		// on the side where the spider already is. So it trails behind while you move
+		// and settles a short distance away when you stop.
+		var chase = { x: 0, y: 0 };
+		var main = new Spider({
+			main: true, scale: 1, k: CFG.mainFollow,
+			follow: function () {
+				var D = CFG.followDistance;
+				var dx = main.x - mouse.x, dy = main.y - mouse.y;
+				var d = Math.hypot(dx, dy);
+				if (d < 1) { dx = -Math.cos(main.heading); dy = -Math.sin(main.heading); d = 1; }
+				chase.x = mouse.x + dx / d * D;
+				chase.y = mouse.y + dy / d * D;
+				return chase;
+			}
+		});
 		var others = [];
 
 		function addFollower(tag, o) {
@@ -902,7 +932,7 @@
 			if (!toggleBtn) return;
 			toggleBtn.setAttribute("aria-pressed", String(enabled));
 			toggleBtn.title = enabled ? "Spider cursor: on (click to turn off)" : "Spider cursor: off (click to turn on)";
-			toggleBtn.style.opacity = hoverBtn ? "1" : (enabled ? "0.55" : "0.4");
+			toggleBtn.style.opacity = hoverBtn ? "1" : (enabled ? "0.85" : "0.5");
 			toggleBtn.style.filter = enabled ? "none" : "grayscale(1)";
 		}
 
@@ -935,19 +965,31 @@
 			b.setAttribute("data-no-spider", "");
 			b.setAttribute("aria-label", "Toggle spider cursor");
 			b.textContent = "\uD83D\uDD77\uFE0F";
-			b.style.cssText = "position:fixed;right:14px;bottom:14px;width:34px;height:34px;padding:0;" +
-				"border-radius:50%;border:1px solid rgba(128,128,128,.45);background:rgba(18,22,28,.7);" +
-				"color:#fff;font-size:16px;line-height:1;cursor:pointer;z-index:2147483001;" +
-				"display:flex;align-items:center;justify-content:center;transition:opacity .2s,filter .2s;";
+			// !important so site CSS (button resets, transforms, etc.) can't hide or move it.
+			b.style.cssText = "position:fixed !important;right:16px !important;bottom:16px !important;left:auto !important;top:auto !important;" +
+				"width:40px !important;height:40px !important;margin:0 !important;padding:0 !important;" +
+				"border-radius:50% !important;border:1px solid rgba(160,160,160,.6) !important;" +
+				"background:rgba(18,22,28,.85) !important;color:#fff !important;font-size:20px !important;line-height:1 !important;" +
+				"cursor:pointer !important;z-index:2147483647 !important;visibility:visible !important;" +
+				"display:flex !important;align-items:center !important;justify-content:center !important;" +
+				"transition:opacity .2s,filter .2s;";
 			b.addEventListener("click", function () { setEnabled(!enabled); });
 			b.addEventListener("mouseenter", function () { hoverBtn = true; refreshButton(); });
 			b.addEventListener("mouseleave", function () { hoverBtn = false; refreshButton(); });
 			b.addEventListener("focus", function () { hoverBtn = true; refreshButton(); });
 			b.addEventListener("blur", function () { hoverBtn = false; refreshButton(); });
-			document.body.appendChild(b);
+			// Attached to <html>, not <body>: a transform/filter on <body> would break position:fixed.
+			document.documentElement.appendChild(b);
 			toggleBtn = b;
 			refreshButton();
 		}
+
+		// Handy from the browser console: spiderCursor.toggle(), .enable(), .disable()
+		window.spiderCursor = {
+			enable: function () { setEnabled(true); },
+			disable: function () { setEnabled(false); },
+			toggle: function () { setEnabled(!enabled); }
+		};
 
 		/* ---------- Events ---------- */
 		window.addEventListener("pointermove", function (e) {
@@ -1025,6 +1067,8 @@
 
 		if (!enabled) canvas.style.display = "none";
 		else applyCursorClass(true);
+
+		say("v2 started" + (enabled ? "" : " (currently switched off, click the spider button to turn it on)") + ". Move the mouse over the page.");
 	}
 
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
